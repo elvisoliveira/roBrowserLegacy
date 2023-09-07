@@ -8,7 +8,7 @@
  * @author Vincent Thibault
  */
 
-define([ 'require', 'Utils/jquery'], function( require, jQuery )
+define([ 'require' ], function( require )
 {
 	'use strict';
 
@@ -29,10 +29,19 @@ define([ 'require', 'Utils/jquery'], function( require, jQuery )
 		this.id        = this.constructor.list.push(this) - 1;
 
 		// Create applet
-		this.applet    = jQuery('<applet/>')
-			.attr({ archive: require.toUrl('./Java/JavaSocketBridge.jar'), code:'JavaSocketBridge.class', width:0, height:0 })
-			.html('<param name="id" value="'+ this.id +'"/>')
-			.appendTo('body')[0];
+		this.applet = document.createElement('applet');
+		this.applet.setAttribute('archive', require.toUrl('./Java/JavaSocketBridge.jar'));
+		this.applet.setAttribute('code', 'JavaSocketBridge.class');
+		this.applet.setAttribute('width', '0');
+		this.applet.setAttribute('height', '0');
+
+		var param = document.createElement('param');
+		param.setAttribute('name', 'id');
+		param.setAttribute('value', this.id);
+
+		this.applet.appendChild(param);
+
+		document.body.appendChild(this.applet);
 	}
 
 
