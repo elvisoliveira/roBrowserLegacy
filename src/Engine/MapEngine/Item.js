@@ -29,6 +29,7 @@ define(function( require )
 	var Inventory    			 = require('UI/Components/Inventory/Inventory');
 	var CartItems    			 = require('UI/Components/CartItems/CartItems');
 	var Equipment    			 = require('UI/Components/Equipment/Equipment');
+	var Storage                  = require('UI/Components/Storage/Storage');
 	var MakeItemSelection     	 = require('UI/Components/MakeItemSelection/MakeItemSelection');
 	var ItemListWindowSelection  = require('UI/Components/MakeItemSelection/ItemListWindowSelection');
 
@@ -93,7 +94,7 @@ define(function( require )
 	{
 		// Fail
 		if (pkt.result !== 0) {
-			ChatBox.addText( DB.getMessage(53), ChatBox.TYPE.ERROR );
+			ChatBox.addText( DB.getMessage(53), ChatBox.TYPE.ERROR, ChatBox.FILTER.ITEM );
 			return;
 		}
 
@@ -104,7 +105,8 @@ define(function( require )
 
 		ChatBox.addText(
 			DB.getMessage(153).replace('%s', getTextItem ).replace('%d', pkt.count ),
-			ChatBox.TYPE.BLUE
+			ChatBox.TYPE.BLUE,
+			ChatBox.FILTER.ITEM
 		);
 
 		Inventory.addItem(pkt);
@@ -149,7 +151,8 @@ define(function( require )
 				var it = DB.getItemInfo( item.ITID );
 				ChatBox.addText(
 					it.identifiedDisplayName + ' ' + DB.getMessage(171),
-					ChatBox.TYPE.ERROR
+					ChatBox.TYPE.ERROR,
+					ChatBox.FILTER.ITEM
 				);
 
 				if (!(pkt.wearLocation & EquipLocation.AMMO)) {
@@ -178,7 +181,8 @@ define(function( require )
 			Equipment.equip( item, pkt.wearLocation );
 			ChatBox.addText(
 				DB.getItemName(item) + ' ' + DB.getMessage(170),
-				ChatBox.TYPE.BLUE
+				ChatBox.TYPE.BLUE,
+				ChatBox.FILTER.ITEM
 			);
 
 			// Display
@@ -193,7 +197,8 @@ define(function( require )
 		else {
 			ChatBox.addText(
 				DB.getMessage(372),
-				ChatBox.TYPE.ERROR
+				ChatBox.TYPE.ERROR,
+				ChatBox.FILTER.ITEM
 			);
 		}
 	}
@@ -229,7 +234,8 @@ define(function( require )
 		Equipment.setEquipConfig( pkt.bOpenEquipmentWin );
 		ChatBox.addText(
 			DB.getMessage(1358 + (pkt.bOpenEquipmentWin ? 1 : 0) ),
-			ChatBox.TYPE.INFO
+			ChatBox.TYPE.INFO,
+			ChatBox.FILTER.ITEM
 		);
 	}
 
@@ -404,11 +410,11 @@ define(function( require )
 	function onAckAddItemToCart( pkt ){
 		switch (pkt.result) {
 			case 0:
-				ChatBox.addText( DB.getMessage(220), ChatBox.TYPE.ERROR );
+				ChatBox.addText( DB.getMessage(220), ChatBox.TYPE.ERROR, ChatBox.FILTER.ITEM );
 				break;
 
 			case 1:
-				ChatBox.addText( DB.getMessage(221), ChatBox.TYPE.ERROR );
+				ChatBox.addText( DB.getMessage(221), ChatBox.TYPE.ERROR, ChatBox.FILTER.ITEM );
 				break;
 		}
 	}
@@ -459,7 +465,12 @@ define(function( require )
 	 */
 	ItemListWindowSelection.onItemListWindowSelected = function onItemListWindowSelected( inforMaterialList )
 	{
-		var pkt   = new PACKET.CZ.ITEMLISTWIN_RES();
+		var pkt;
+		if(PACKETVER.value >= 20180307) {
+			pkt   = new PACKET.CZ.ITEMLISTWIN_RES2();
+		} else {
+			pkt   = new PACKET.CZ.ITEMLISTWIN_RES();
+		}
 
 		pkt.Type = inforMaterialList.Type;
 		pkt.Action = inforMaterialList.Action;
@@ -492,6 +503,71 @@ define(function( require )
 	}
 
 	/**
+	 * Result of Inventory Expansion
+	 *
+	 * @param {object} pkt - PACKET.ZC.EXTEND_BODYITEM_SIZE
+	 */
+	function onBodyItemSize(pkt) {
+        // TODO add it to inventory
+    }
+
+	/**
+	 * Result of Inventory Expansion
+	 *
+	 * @param {object} pkt - PACKET.ZC.RECOVER_PENALTY_OVERWEIGHT
+	 */
+	function onRecoverPenaltyOverweight(pkt) {
+		// TODO add it as status check
+		// show percent to status, still a wip
+		if (Session.Entity) {
+			Session.Entity.overWeightPercent = pkt.percentage;
+		}
+	}
+
+	/**
+	 * Result of Inventory Expansion
+	 *
+	 * @param {object} pkt - PACKET.ZC.SPLIT_SEND_ITEMLIST_NORMAL
+	 */
+	function onItemListNormal(pkt) {
+		switch (pkt.invType) {
+			case 0:
+				Inventory.setItems( pkt.itemInfo || pkt.ItemInfo );
+				break;
+			case 1:
+				CartItems.setItems( pkt.itemInfo || pkt.ItemInfo );
+				break;
+			case 2:
+				Storage.append();
+				Storage.setItems(  pkt.itemInfo || pkt.ItemInfo );
+				break;
+			default:
+				throw new Error("[PACKET.ZC.SPLIT_SEND_ITEMLIST_NORMAL] - Unknown invType '" + pkt.invType + "'.");
+		}
+	}
+
+	/**
+	 * Result of Inventory Expansion
+	 *
+	 * @param {object} pkt - PACKET.ZC.SPLIT_SEND_ITEMLIST_EQUIP
+	 */
+	function onItemListEquip(pkt) {
+		switch (pkt.invType) {
+			case 0:
+				Inventory.setItems( pkt.itemInfo || pkt.ItemInfo );
+				break;
+			case 1:
+				CartItems.setItems( pkt.itemInfo || pkt.ItemInfo );
+				break;
+			case 2:
+				Storage.setItems(  pkt.itemInfo || pkt.ItemInfo );
+				break;
+			default:
+				throw new Error("[PACKET.ZC.SPLIT_SEND_ITEMLIST_NORMAL] - Unknown invType '" + pkt.invType + "'.");
+		}
+	}
+	
+	/**
 	 * Initialize
 	 */
 	return function ItemEngine()
@@ -499,12 +575,15 @@ define(function( require )
 		Network.hookPacket( PACKET.ZC.ITEM_ENTRY,             onItemExistInGround );
 		Network.hookPacket( PACKET.ZC.ITEM_FALL_ENTRY,        onItemSpamInGround );
 		Network.hookPacket( PACKET.ZC.ITEM_FALL_ENTRY2,       onItemSpamInGround );
+		Network.hookPacket( PACKET.ZC.ITEM_FALL_ENTRY3,       onItemSpamInGround );
 		Network.hookPacket( PACKET.ZC.ITEM_DISAPPEAR,         onItemInGroundVanish);
 		Network.hookPacket( PACKET.ZC.ITEM_PICKUP_ACK,        onItemPickAnswer );
 		Network.hookPacket( PACKET.ZC.ITEM_PICKUP_ACK2,       onItemPickAnswer );
 		Network.hookPacket( PACKET.ZC.ITEM_PICKUP_ACK3,       onItemPickAnswer );
 		Network.hookPacket( PACKET.ZC.ITEM_PICKUP_ACK5,       onItemPickAnswer );
 		Network.hookPacket( PACKET.ZC.ITEM_PICKUP_ACK6, 			onItemPickAnswer);
+		Network.hookPacket( PACKET.ZC.ITEM_PICKUP_ACK7, 			onItemPickAnswer);
+		Network.hookPacket( PACKET.ZC.ITEM_PICKUP_ACK8, 			onItemPickAnswer);
 		Network.hookPacket( PACKET.ZC.ITEM_THROW_ACK,         onIventoryRemoveItem );
 		Network.hookPacket( PACKET.ZC.NORMAL_ITEMLIST,        onInventorySetList );
 		Network.hookPacket( PACKET.ZC.NORMAL_ITEMLIST2,       onInventorySetList );
@@ -520,7 +599,6 @@ define(function( require )
 		Network.hookPacket( PACKET.ZC.EQUIPMENT_ITEMLIST3,    onInventorySetList );
 		Network.hookPacket( PACKET.ZC.EQUIPMENT_ITEMLIST4,    onInventorySetList );
 		Network.hookPacket( PACKET.ZC.EQUIPMENT_ITEMLIST5,    onInventorySetList );
-		Network.hookPacket( PACKET.ZC.EQUIPMENT_ITEMLIST6,    onInventorySetList );
 		Network.hookPacket( PACKET.ZC.REQ_TAKEOFF_EQUIP_ACK,  onEquipementTakeOff );
 		Network.hookPacket( PACKET.ZC.REQ_TAKEOFF_EQUIP_ACK2, onEquipementTakeOff );
 		Network.hookPacket( PACKET.ZC.ACK_TAKEOFF_EQUIP_V5,   onEquipementTakeOff );
@@ -539,9 +617,15 @@ define(function( require )
 		Network.hookPacket( PACKET.ZC.ADD_ITEM_TO_CART,          onCartItemAdded );
 		Network.hookPacket( PACKET.ZC.ADD_ITEM_TO_CART2,         onCartItemAdded );
 		Network.hookPacket( PACKET.ZC.ADD_ITEM_TO_CART3,         onCartItemAdded );
+		Network.hookPacket( PACKET.ZC.ADD_ITEM_TO_CART4,         onCartItemAdded );
 		Network.hookPacket( PACKET.ZC.MAKABLEITEMLIST,        onMakeitemList );
 		Network.hookPacket( PACKET.ZC.MAKINGITEM_LIST,        onMakeitem_List );
 		Network.hookPacket( PACKET.ZC.ACK_ADDITEM_TO_CART,        onAckAddItemToCart );
 		Network.hookPacket( PACKET.ZC.ITEMLISTWIN_OPEN,        onListWinItem );
+		Network.hookPacket( PACKET.ZC.EXTEND_BODYITEM_SIZE,        onBodyItemSize );
+		Network.hookPacket( PACKET.ZC.RECOVER_PENALTY_OVERWEIGHT,        onRecoverPenaltyOverweight );
+		Network.hookPacket( PACKET.ZC.SPLIT_SEND_ITEMLIST_NORMAL,       onItemListNormal );
+		Network.hookPacket( PACKET.ZC.SPLIT_SEND_ITEMLIST_EQUIP,        onItemListEquip );
+		Network.hookPacket( PACKET.ZC.SPLIT_SEND_ITEMLIST_EQUIP2,        onItemListEquip );
 	};
 });

@@ -8,7 +8,7 @@
 This guide section will help you running robrowser locally.
 ### Prerequisite
 #### RoBrowser
-- Install websocket proxy `npm install wsproxy -g`
+- Install websocket proxy `npm install wsproxy -g`. For more info read [the wsProxy Readme](https://github.com/herenow/wsProxy#readme)
 - Get the source code
   - Either Get the code via GIT
     - HTTPS: `https://github.com/MrAntares/roBrowserLegacy.git`
@@ -21,7 +21,7 @@ This guide section will help you running robrowser locally.
 - You need a game server that is compatible with the original game. There are many implementations/versions/forks that are compatible, you can use any of them, but we suggest using one of the following two, because we test using these emulators:
   - [rAthena](https://github.com/rathena/rathena)
   - [Hercules](https://github.com/HerculesWS/Hercules/)
-- Client/packet versions currently supported up to `2015-10-01`. We advise to use versions older than `2014`.
+- All client/packet versions are supported, but the number of missing features increases with higher dates, since we need time to get everything implemented. We advise you to use versions older than `2015` for the best experience, but this is not a restriction, only a suggestion.
 - Disable pincode on the game server. (Not supported yet)
 - Disable packet_obfuscation on the game server. (Not supported yet, causes invalid packets)
 #### Browser
@@ -34,7 +34,19 @@ To run roBrowser you will need an up to date browser that supports [WebGL](http:
 Others will probably work as well especially if Chromium based, but there might be slight differences.
 
 __We assume in the guide below http server to run on port `8000`.__
-### Compile files
+
+### Compile files using NPM
+This step/section is only recommended for a "Live" server. It will only pack all the resource files into one file to speed up loading. Requires to set in the roBrowser config: `development: false,`.
+- Access the RobrowserLagacy Folder using terminal or cmd `cd path/to/robrowserlegacy`
+- Use build command to generate the files `npm run build`
+- Files will be generated at `dist/Web` folder
+
+For development purposes (modifying the source/testing) set in the roBrowser config: `development: true,`.
+- Access the RobrowserLagacy Folder using terminal or cmd `cd path/to/robrowserlegacy`
+- Use build command to generate the files `npm run serve`
+- Files will be loaded from  at `src/` folder
+
+### Compile files using browser
 This step/section is only recommended for a "Live" server. It will only pack all the resource files into one file to speed up loading. Requires to set in the roBrowser config: `development: false,`.
 
 For development purposes (modifying the source/testing) skip this section and set in the roBrowser config: `development: true,`. In development mode roBrowser will use the files directly from `src/`.
@@ -51,7 +63,7 @@ For development purposes (modifying the source/testing) skip this section and se
 - copy your data directory under `client/data`directory
 - copy your `clientinfo.xml` (client-server information) under `client/data` directory
 - copy your AI files under `AI` directory
-- check the `client/configs.php` if it is configured properly for your use
+- check the `client/configs.php` if it is configured properly for your use and make sure `DEBUG` is set to false
 - check the `client/.htaccess` file if the ErrorDocument option points to the `client/index.php` via the correct url. If you don't run roBrowser from the www root and you use remote client then you need to adjust this url (see examples in the file)
 
 In all `AI/*.lua` files :
@@ -122,16 +134,28 @@ function initialize() {
 You can set up your own `index.html` / integrate roBrowser into your website as well based on the .examples/ and this example above.
 
 ### Start websocket proxy
-- run `wsproxy -a 127.0.0.1:6900,127.0.0.1:6121,127.0.0.1:5121`
-also don't forget to start your server
+- run `wsproxy -p 5999 -a 127.0.0.1:6900,127.0.0.1:6121,127.0.0.1:5121`
 
-Note: Most of the browsers nowadays don't support mixed security, so either use `https` & `wss` everywhere or `http` & `ws`. Some browsers recently started to disable non-secure websocket calls, so `https` & `wss` is highly recommended if you are using roBrowser on a non-local/open server.
+Again, for more info read [the wsProxy Readme](https://github.com/herenow/wsProxy#readme)!
+Also don't forget to start your game server!
+
+Note: Most of the browsers nowadays don't support mixed security, so either use `https` & `wss` everywhere or `http` & `ws`. Some browsers recently started to disable non-secure websocket calls, so `https` & `wss` is highly recommended if you are using roBrowser on a non-local/open server. To start wsProxy in secure mode (`wss`), you need to have the key and chain files for your certificate and use the following command:
+- `wsproxy -p 5999 -a 127.0.0.1:6900,127.0.0.1:6121,127.0.0.1:5121 -s -k your/path/to/privkey.pem -c your/path/to/fullchain.pem`
+
 ### Enjoy!
 - Access to `http://localhost:8000/examples/api-online-frame.html` with your browser
 - 
 ![](img/start-robrowser.png)
 
 ## Troubleshooting
+
+### The screen is weird and/or the developer console (F12) says it can't load game assets
+Your remote client is not configured properly.
+- Check the `client/configs.php` and make sure `DEBUG` is set to false.
+- Check the `client/.htaccess` file if the ErrorDocument option points to the `client/index.php` via the correct url. If you don't run roBrowser from the www root and you use remote client then you need to adjust this url (see examples in the file).
+
+If it is still not working you can try setting `DEBUG` to true and open the `http://localhost:8000/client/index.php` in your browser to see the debug trace. You can also call files directly from your game data to see if they load properly, eg: `http://localhost:8000/client/data/texture/black.bmp`. After debugging set `DEBUG` to false.
+
 ### Screen is blank
 Check that you don't have an extension using [postMessage](https://developer.mozilla.org/en-US/docs/Web/API/Window/message_event), it will conflict with code in `api.html` which listen for message.
 

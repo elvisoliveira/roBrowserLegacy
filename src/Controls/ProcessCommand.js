@@ -84,6 +84,19 @@ define(function( require )
 				MapPreferences.save();
 				return;
 
+			case 'showname':
+				this.addText( DB.getMessage(722 + MapPreferences.showname), this.TYPE.INFO );
+				MapPreferences.showname = !MapPreferences.showname;
+				MapPreferences.save();
+
+				var EntityManager = getModule('Renderer/EntityManager');
+
+				// update all display names
+				EntityManager.forEach(function(entity){
+					entity.display.refresh(entity);
+				});
+				return;
+
 			case 'camera':
 				this.addText( DB.getMessage(319 + CameraPreferences.smooth), this.TYPE.INFO );
 				CameraPreferences.smooth = !CameraPreferences.smooth;
@@ -128,7 +141,11 @@ define(function( require )
 
 			case 'sit':
 			case 'stand':
-				pkt = new PACKET.CZ.REQUEST_ACT();
+				if(PACKETVER.value >= 20180307) {
+					pkt        = new PACKET.CZ.REQUEST_ACT2();
+				} else {
+					pkt        = new PACKET.CZ.REQUEST_ACT();
+				}
 				if (Session.Entity.action === Session.Entity.ACTION.SIT) {
 					pkt.action = 3; // stand up
 				}
@@ -140,7 +157,11 @@ define(function( require )
 
 			case 'doridori':
 				Session.Entity.headDir = ( Session.Entity.headDir === 1 ? 2 : 1 );
-				pkt         = new PACKET.CZ.CHANGE_DIRECTION();
+				if(PACKETVER.value >= 20180307) {
+					pkt = new PACKET.CZ.CHANGE_DIRECTION2();
+				} else {
+					pkt = new PACKET.CZ.CHANGE_DIRECTION();
+				}
 				pkt.headDir = Session.Entity.headDir;
 				pkt.dir     = Session.Entity.direction;
 				Network.sendPacket(pkt);
@@ -167,7 +188,11 @@ define(function( require )
 
 			case 'bangbang':
 				Session.Entity.direction = ( Session.Entity.direction + 1 ) % 8;
-				pkt         = new PACKET.CZ.CHANGE_DIRECTION();
+				if(PACKETVER.value >= 20180307) {
+					pkt = new PACKET.CZ.CHANGE_DIRECTION2();
+				} else {
+					pkt = new PACKET.CZ.CHANGE_DIRECTION();
+				}
 				pkt.headDir = Session.Entity.headDir;
 				pkt.dir     = Session.Entity.direction;
 				Network.sendPacket(pkt);
@@ -175,7 +200,11 @@ define(function( require )
 
 			case 'bingbing':
 				Session.Entity.direction = ( Session.Entity.direction + 7 ) % 8;
-				pkt         = new PACKET.CZ.CHANGE_DIRECTION();
+				if(PACKETVER.value >= 20180307) {
+					pkt = new PACKET.CZ.CHANGE_DIRECTION2();
+				} else {
+					pkt = new PACKET.CZ.CHANGE_DIRECTION();
+				}
 				pkt.headDir = Session.Entity.headDir;
 				pkt.dir     = Session.Entity.direction;
 				Network.sendPacket(pkt);

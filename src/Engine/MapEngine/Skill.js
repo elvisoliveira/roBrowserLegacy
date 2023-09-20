@@ -23,6 +23,7 @@ define(function( require )
 	var Entity            	  = require('Renderer/Entity/Entity');
 	var Session               = require('Engine/SessionStorage');
 	var Network               = require('Network/NetworkManager');
+	var PACKETVER             = require('Network/PacketVerManager');
 	var PACKET                = require('Network/PacketStructure');
 	var EntityManager         = require('Renderer/EntityManager');
 	var EffectManager         = require('Renderer/EffectManager');
@@ -184,7 +185,7 @@ define(function( require )
 		}
 
 		if (error) {
-			ChatBox.addText( DB.getMessage(error), ChatBox.TYPE.ERROR );
+			ChatBox.addText( DB.getMessage(error), ChatBox.TYPE.ERROR, ChatBox.FILTER.SKILL_FAIL );
 			srcEntity.setAction(SkillActionTable['DEFAULT']( srcEntity, Renderer.tick ));
 		}
 	}
@@ -219,6 +220,7 @@ define(function( require )
 	 */
 	function onShortCutList( pkt )
 	{
+		if(pkt.tab && pkt.tab > 0) return; // not available yet
 		ShortCut.setList( pkt.ShortCutKey );
 	}
 
@@ -283,7 +285,7 @@ define(function( require )
 
 		switch (pkt.result) {
 			case 0: // success
-				ChatBox.addText( DB.getMessage(491), ChatBox.TYPE.BLUE);
+				ChatBox.addText( DB.getMessage(491), ChatBox.TYPE.BLUE, ChatBox.FILTER.ITEM);
 
 				// Remove old item
 				var item = Inventory.removeItem(pkt.index, 1);
@@ -296,7 +298,7 @@ define(function( require )
 				break;
 
 			case 1: // Fail
-				ChatBox.addText( DB.getMessage(492), ChatBox.TYPE.ERROR);
+				ChatBox.addText( DB.getMessage(492), ChatBox.TYPE.ERROR, ChatBox.FILTER.ITEM);
 				break;
 		}
 	}
@@ -368,11 +370,11 @@ define(function( require )
 	{
 		switch (pkt.type) {
 			case 0: //Unable to Teleport in this area
-				ChatBox.addText( DB.getMessage(500), ChatBox.TYPE.ERROR);
+				ChatBox.addText( DB.getMessage(500), ChatBox.TYPE.ERROR, ChatBox.FILTER.SKILL_FAIL);
 				break;
 
 			case 1: //Saved point cannot be memorized.
-				ChatBox.addText( DB.getMessage(501), ChatBox.TYPE.ERROR);
+				ChatBox.addText( DB.getMessage(501), ChatBox.TYPE.ERROR, ChatBox.FILTER.SKILL_FAIL);
 				break;
 		}
 	}
@@ -387,15 +389,15 @@ define(function( require )
 	{
 		switch (pkt.errorCode) {
 			case 0: // Saved location as a Memo Point for Warp skill.
-				ChatBox.addText( DB.getMessage(217), ChatBox.TYPE.BLUE);
+				ChatBox.addText( DB.getMessage(217), ChatBox.TYPE.BLUE, ChatBox.FILTER.PUBLIC_LOG);
 				break;
 
 			case 1: // Skill Level is not high enough.
-				ChatBox.addText( DB.getMessage(214), ChatBox.TYPE.ERROR);
+				ChatBox.addText( DB.getMessage(214), ChatBox.TYPE.ERROR, ChatBox.FILTER.SKILL_FAIL);
 				break;
 
 			case 2: // You haven't learned Warp.
-				ChatBox.addText( DB.getMessage(216), ChatBox.TYPE.ERROR);
+				ChatBox.addText( DB.getMessage(216), ChatBox.TYPE.ERROR, ChatBox.FILTER.SKILL_FAIL);
 				break;
 		}
 	}
@@ -487,7 +489,12 @@ define(function( require )
 	 */
 	ShortCut.onChange = function onChange( index, isSkill, ID, count )
 	{
-		var pkt                 = new PACKET.CZ.SHORTCUT_KEY_CHANGE();
+		var pkt;
+		if(PACKETVER.value >= 20190522) {
+			pkt = new PACKET.CZ.SHORTCUT_KEY_CHANGE2();
+		} else {
+			pkt = new PACKET.CZ.SHORTCUT_KEY_CHANGE1();
+		}
 		pkt.Index               = index;
 		pkt.ShortCutKey.isSkill = isSkill ? 1 : 0;
 		pkt.ShortCutKey.ID      = ID;
@@ -576,7 +583,11 @@ define(function( require )
 			}
        	}
 
-        pkt               = new PACKET.CZ.USE_SKILL();
+		if(PACKETVER.value >= 20180307) {
+			pkt               = new PACKET.CZ.USE_SKILL2();
+		} else {
+			pkt               = new PACKET.CZ.USE_SKILL();
+		}
         pkt.SKID          = id;
         pkt.selectedLevel = level;
         pkt.targetID      = targetID || Session.Entity.GID;
@@ -595,7 +606,11 @@ define(function( require )
 			pkt         = new PACKET.CZ.REQUEST_MOVENPC();
 			pkt.GID		= Session.homunId;
 		} else {
-			pkt         = new PACKET.CZ.REQUEST_MOVE();
+			if(PACKETVER.value >= 20180307) {
+				pkt         = new PACKET.CZ.REQUEST_MOVE2();
+			} else {
+				pkt         = new PACKET.CZ.REQUEST_MOVE();
+			}
 		}
 		pkt.dest[0] = out[(count-1)*2 + 0];
 		pkt.dest[1] = out[(count-1)*2 + 1];
@@ -657,7 +672,13 @@ define(function( require )
 			return;
 		}
 
-		pkt               = new PACKET.CZ.USE_SKILL_TOGROUND();
+		if(PACKETVER.value >= 20190904) {
+			pkt               = new PACKET.CZ.USE_SKILL_TOGROUND3();
+		} else if(PACKETVER.value >= 20180307) {
+			pkt               = new PACKET.CZ.USE_SKILL_TOGROUND2();
+		} else {
+			pkt               = new PACKET.CZ.USE_SKILL_TOGROUND();
+		}
 		pkt.SKID          = id;
 		pkt.selectedLevel = level;
 		pkt.xPos          = x;
@@ -681,7 +702,11 @@ define(function( require )
 			pkt         = new PACKET.CZ.REQUEST_MOVENPC();
 			pkt.GID		= Session.homunId;
 		} else {
-			pkt         = new PACKET.CZ.REQUEST_MOVE();
+			if(PACKETVER.value >= 20180307) {
+				pkt         = new PACKET.CZ.REQUEST_MOVE2();
+			} else {
+				pkt         = new PACKET.CZ.REQUEST_MOVE();
+			}
 		}
 		pkt.dest[0]        = out[(count-1)*2 + 0];
 		pkt.dest[1]        = out[(count-1)*2 + 1];
@@ -726,7 +751,7 @@ define(function( require )
 		message = message.replace('%s', pkt.monsterName);
 		message = message.replace('%d%', percent);
 
-		ChatBox.addText( message, ChatBox.TYPE.ANNOUNCE, color );
+		ChatBox.addText( message, ChatBox.TYPE.ANNOUNCE, ChatBox.FILTER.PUBLIC_LOG, color );
 		Announce.append();
 		Announce.set(message, color);
 	}
@@ -738,7 +763,7 @@ define(function( require )
 		var name =  SkillInfo[ pkt.SKID ].SkillName;
 		message = `[${name}] ${message}`;
 
-		ChatBox.addText( message, ChatBox.TYPE.ANNOUNCE, color );
+		ChatBox.addText( message, ChatBox.TYPE.ANNOUNCE, ChatBox.FILTER.PUBLIC_LOG, color );
 	}
 	
 	function onSense(pkt){
@@ -758,6 +783,7 @@ define(function( require )
 		Network.hookPacket( PACKET.ZC.SHORTCUT_KEY_LIST,      onShortCutList );
 		Network.hookPacket( PACKET.ZC.SHORTCUT_KEY_LIST_V2,   onShortCutList );
 		Network.hookPacket( PACKET.ZC.SHORTCUT_KEY_LIST_V3,   onShortCutList );
+		Network.hookPacket( PACKET.ZC.SHORTCUT_KEY_LIST_V4,   onShortCutList );
 		Network.hookPacket( PACKET.ZC.ACK_TOUSESKILL,         onSkillResult );
 		Network.hookPacket( PACKET.ZC.NOTIFY_EFFECT,          onSpecialEffect );
 		Network.hookPacket( PACKET.ZC.NOTIFY_EFFECT2,         onEffect );
@@ -773,6 +799,7 @@ define(function( require )
 		Network.hookPacket( PACKET.ZC.MAKINGARROW_LIST,       onMakingarrowList );
 		Network.hookPacket( PACKET.ZC.NOTIFY_WEAPONITEMLIST,  onRefineList );
 		Network.hookPacket( PACKET.ZC.REPAIRITEMLIST,         onRepairList);
+		Network.hookPacket( PACKET.ZC.REPAIRITEMLIST2,        onRepairList);
 		Network.hookPacket( PACKET.ZC.SPIRITS,                onSpiritSphere );
 		Network.hookPacket( PACKET.ZC.SPIRITS2,               onSpiritSphere );
 		Network.hookPacket( PACKET.ZC.MILLENNIUMSHIELD,       onSpiritSphere );

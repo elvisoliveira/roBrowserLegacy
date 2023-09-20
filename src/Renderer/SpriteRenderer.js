@@ -108,6 +108,7 @@ function(      WebGL,         glMatrix,      Camera )
 
 		uniform float uShadow;
 		uniform vec2 uTextSize;
+		uniform bool uIsRGBA;
 
 		// With palette we don't have a good result because of the gl.NEAREST, so smooth it.
 		vec4 bilinearSample(vec2 uv, sampler2D indexT, sampler2D LUT) {
@@ -157,8 +158,8 @@ function(      WebGL,         glMatrix,      Camera )
 			texture.rgb   *= uShadow;
 			gl_FragColor   = texture * uSpriteRendererColor;
 
-			// Similar to Official RO, only applied when not transparent [Waken]
-			if (uSpriteRendererColor.a >= 0.8) {
+			// Similar to Official RO, only applied when not transppparent [Waken]
+			if (uSpriteRendererColor.a >= 0.8 && !uIsRGBA) {
 				float edgeFactor = smoothstep(0.20, 0.90, gl_FragColor.a);
 				gl_FragColor.rgb *= edgeFactor;
 			}
@@ -169,8 +170,6 @@ function(      WebGL,         glMatrix,      Camera )
 				float fogFactor = smoothstep( uFogNear, uFogFar, depth );
 				gl_FragColor    = mix( gl_FragColor, vec4( uFogColor, gl_FragColor.w ), fogFactor );
 			}
-			
-		
 		}
 	`;
 
@@ -239,7 +238,6 @@ function(      WebGL,         glMatrix,      Camera )
 		size:    new Float32Array(2)
 	};
 
-	SpriteRenderer.removing = false;
 
 	/**
 	 * @var {object} sprite imageData (for 2D context)
@@ -398,9 +396,6 @@ function(      WebGL,         glMatrix,      Camera )
 		var attribute = _program.attribute;
 		var uniform   = _program.uniform;
 
-		// is going to be removed
-		//console.log("SpriteRenderer.bind3DContext =>", this)
-
 		gl.useProgram( _program );
 		gl.uniformMatrix4fv( uniform.uProjectionMat, false,  projection );
 		gl.uniformMatrix4fv( uniform.uModelViewMat,  false,  modelView );
@@ -475,7 +470,7 @@ function(      WebGL,         glMatrix,      Camera )
 	/**
 	 * Render in 3D mode
 	 */
-	function RenderCanvas3D()
+	function RenderCanvas3D(isBlendModeOne)
 	{
 		// Nothing to render ?
 		if (!this.image.texture || !this.color[3]) {
@@ -488,6 +483,12 @@ function(      WebGL,         glMatrix,      Camera )
 		var uniform = _program.uniform;
 		var gl      = _gl;
 		var use_pal = this.image.palette !== null;
+
+		if (isBlendModeOne) {
+			gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
+		} else if (isBlendModeOne === false) {
+			gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+		}
 
 		if (this.shadow !== _shadow) {
 			gl.uniform1f( uniform.uShadow, _shadow = this.shadow);
@@ -528,10 +529,10 @@ function(      WebGL,         glMatrix,      Camera )
 		_size[0]   = this.size[0]   / 175.0 * this.xSize;
 		_size[1]   = this.size[1]   / 175.0 * this.ySize;
 
-		console.log(this.color)
 		gl.uniform4fv( uniform.uSpriteRendererColor,  this.color );
 		gl.uniform2fv( uniform.uSpriteRendererSize,   _size );
 		gl.uniform2fv( uniform.uSpriteRendererOffset, _offset );
+		gl.uniform1i( uniform.uIsRGBA, this.sprite.type)
 
 		// Avoid binding the new texture 150 times if it's the same.
 		if (_groupId !== _lastGroupId || _texture !== this.image.texture) {
