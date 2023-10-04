@@ -534,7 +534,7 @@ define(['Utils/BinaryWriter', './PacketVerManager', 'Utils/Struct'], function (B
 			pkt_len = 2 + 2 + this.itemList.length * 6;
 		} else {
 			pkt_len = 2 + 2 + this.itemList.length * 4;
-		} 
+		}
 		var pkt_buf = new BinaryWriter(pkt_len);
 
 		pkt_buf.writeShort(0xc8);
@@ -3790,7 +3790,7 @@ define(['Utils/BinaryWriter', './PacketVerManager', 'Utils/Struct'], function (B
 		pkt.view.setUint32(ver[3], this.GID, true);
 		return pkt;
 	};
-	
+
 	// 0x436
 	PACKET.CZ.ENTER2 = function PACKET_CZ_ENTER2() {
 		this.AID = 0;
@@ -4479,7 +4479,7 @@ define(['Utils/BinaryWriter', './PacketVerManager', 'Utils/Struct'], function (B
 		return pkt_buf;
 	};
 
-	//0848 <packet len>.W <count>.W <packet len>.W <kafra points>.L <count>.W { <amount>.W <name id>.W <tab>.W }.6B*count 
+	//0848 <packet len>.W <count>.W <packet len>.W <kafra points>.L <count>.W { <amount>.W <name id>.W <tab>.W }.6B*count
 	PACKET.CZ.SE_PC_BUY_CASHITEM_LIST = function PACKET_CZ_SE_PC_BUY_CASHITEM_LIST() {
 		this.kafraPoints = 0;
 		this.item_list = [];
@@ -4509,7 +4509,7 @@ define(['Utils/BinaryWriter', './PacketVerManager', 'Utils/Struct'], function (B
 		this.itemId = fp.readShort();
 		this.result = fp.readShort();
 		this.cashPoints = fp.readUShort();
-		
+
     };
     PACKET.ZC.SE_PC_BUY_CASHITEM_RESULT.size = 16;
 
@@ -6311,7 +6311,7 @@ define(['Utils/BinaryWriter', './PacketVerManager', 'Utils/Struct'], function (B
 		this.itemList = (function() {
 			var len = 22;
 			if (PACKETVER.value >= 20150226) len = 47;
-			
+
 			var i, count=(end-fp.tell())/len|0, out=new Array(count);
 			for (i = 0; i < count; ++i) {
 				out[i] = {};
@@ -6328,7 +6328,7 @@ define(['Utils/BinaryWriter', './PacketVerManager', 'Utils/Struct'], function (B
 				out[i].slot.card2 = fp.readUShort();
 				out[i].slot.card3 = fp.readUShort();
 				out[i].slot.card4 = fp.readUShort();
-				
+
 				if (PACKETVER.value >= 20150226) {
 					out[i].Options = [];
 					out[i].Options[1] = fp.readStruct(option);
@@ -6485,8 +6485,8 @@ define(['Utils/BinaryWriter', './PacketVerManager', 'Utils/Struct'], function (B
 			var i, count=(end-fp.tell())/32|0, out=new Array(count);
 			for (i = 0; i < count; ++i) {
 				out[i] = {};
-				out[i].GDID = fp.readLong();
 				out[i].relation = fp.readLong();
+				out[i].GDID = fp.readLong();
 				out[i].guildName = fp.readString(24);
 			}
 			return out;
@@ -11502,6 +11502,116 @@ define(['Utils/BinaryWriter', './PacketVerManager', 'Utils/Struct'], function (B
 	};
 	PACKET.HC.CHARLIST_NOTIFY.size = (PACKETVER.value >= 20151001 ? 10 : 6);
 
+	// 0x9a6
+	PACKET.ZC.BANKING_CHECK = function PACKET_ZC_BANKING_CHECK(fp, end) {
+		this.money = fp.readLong();
+		this.reason = fp.readShort();
+	};
+	PACKET.ZC.BANKING_CHECK.size = 12;
+
+	// 0x9a7
+	PACKET.CZ.REQ_BANKING_DEPOSIT = function PACKET_CZ_REQ_BANKING_DEPOSIT() {
+		this.AID = 0;
+		this.money = 0;
+	};
+	PACKET.CZ.REQ_BANKING_DEPOSIT.prototype.build = function() {
+		var pkt_len = 2 + 4 + 4;
+		var pkt_buf = new BinaryWriter(pkt_len);
+
+		pkt_buf.writeShort(0x9A7);
+		pkt_buf.writeLong(this.AID);
+		pkt_buf.writeLong(this.money);
+
+		return pkt_buf;
+	}
+
+	// 0x9a8
+	PACKET.ZC.ACK_BANKING_DEPOSIT = function PACKET_ZC_ACK_BANKING_DEPOSIT(fp, end) {
+		this.reason = fp.readShort();
+		this.money = fp.readLong();
+		this.money2 = fp.readLong();
+		this.zeny = fp.readLong();
+	};
+	PACKET.ZC.ACK_BANKING_DEPOSIT.size = 16;
+
+	// 0x9a9
+	PACKET.CZ.REQ_BANKING_WITHDRAW = function PACKET_CZ_REQ_BANKING_WITHDRAW() {
+		this.AID = 0;
+		this.money = 0;
+	};
+	PACKET.CZ.REQ_BANKING_WITHDRAW.prototype.build = function() {
+		var pkt_len = 2 + 4 + 4;
+		var pkt_buf = new BinaryWriter(pkt_len);
+
+		pkt_buf.writeShort(0x9A9);
+		pkt_buf.writeLong(this.AID);
+		pkt_buf.writeLong(this.money);
+
+		return pkt_buf;
+	}
+
+	// 0x9aa
+	PACKET.ZC.ACK_BANKING_WITHDRAW = function PACKET_ZC_ACK_BANKING_WITHDRAW(fp, end) {
+		this.reason = fp.readShort();
+		this.money = fp.readLong();
+		this.money2 = fp.readLong();
+		this.zeny = fp.readLong();
+	};
+	PACKET.ZC.ACK_BANKING_WITHDRAW.size = 16;
+
+	// 0x9ab
+	PACKET.CZ.REQ_BANKING_CHECK = function PACKET_CZ_REQ_BANKING_CHECK() {
+		this.AID = 0;
+	};
+	PACKET.CZ.REQ_BANKING_CHECK.prototype.build = function() {
+		var pkt_len = 6;
+		var pkt_buf = new BinaryWriter(pkt_len);
+
+    	pkt_buf.writeShort(0x9AB);
+   		pkt_buf.writeULong(this.AID); // Write the aid
+
+    	return pkt_buf;
+	}
+
+	// 0x9b6
+	PACKET.CZ.REQ_BANK_OPEN = function PACKET_CZ_REQ_BANK_OPEN() {
+		this.AID = 0;
+	};
+	PACKET.CZ.REQ_BANK_OPEN.prototype.build = function() {
+		var pkt_len = 6;
+		var pkt_buf = new BinaryWriter(pkt_len);
+
+    	pkt_buf.writeShort(0x9b6);
+   		pkt_buf.writeULong(this.AID); // Write the aid
+
+    	return pkt_buf;
+	}
+
+	// 0x9b7
+	PACKET.ZC.ACK_OPEN_BANKING = function PACKET_ZC_ACK_OPEN_BANKING(fp, end) {
+		this.unknown = fp.readUShort();
+	};
+	PACKET.ZC.ACK_OPEN_BANKING.size = 4;
+
+	// 0x9b8
+	PACKET.CZ.REQ_BANK_CLOSE = function PACKET_CZ_REQ_BANK_CLOSE() {
+		this.AID = 0;
+	};
+	PACKET.CZ.REQ_BANK_CLOSE.prototype.build = function() {
+		var pkt_len = 6;
+		var pkt_buf = new BinaryWriter(pkt_len);
+
+    	pkt_buf.writeShort(0x9B8);
+   		pkt_buf.writeULong(this.AID); // Write the aid
+
+    	return pkt_buf;
+	}
+
+	// 0x9b9
+	PACKET.ZC.ACK_CLOSE_BANKING = function PACKET_ZC_ACK_CLOSE_BANKING(fp, end) {
+		this.unknown = fp.readUShort();
+	}
+	PACKET.ZC.ACK_CLOSE_BANKING.size = 4;
 
 	// 0x9ca
 	PACKET.ZC.SKILL_ENTRY5 = function PACKET_ZC_SKILL_ENTRY5(fp, end) {
@@ -11650,7 +11760,7 @@ define(['Utils/BinaryWriter', './PacketVerManager', 'Utils/Struct'], function (B
 	PACKET.ZC.ACK_WHISPER2.size = 7;
 
 	// 0x09e5 TODO: Implement the message and delete item from the shop window
-	PACKET.ZC.DELETEITEM_FROM_MCSTORE2 = function PACKET_ZC_DELETEITEM_FROM_MCSTORE2(fp, end) { 
+	PACKET.ZC.DELETEITEM_FROM_MCSTORE2 = function PACKET_ZC_DELETEITEM_FROM_MCSTORE2(fp, end) {
 		this.index = fp.readShort();
 		this.count = fp.readShort();
 		this.GID = fp.readULong();
@@ -12180,6 +12290,33 @@ define(['Utils/BinaryWriter', './PacketVerManager', 'Utils/Struct'], function (B
 	};
 	PACKET.ZC.ITEM_PICKUP_ACK7.size = (PACKETVER.value >= 20181121 ? 69 : 59);
 
+	// 0xa39
+	PACKET.CH.MAKE_CHAR3 = function PACKET_CH_MAKE_CHAR3() {
+		this.name = '';
+		this.CharNum = 0;
+		this.headPal = 0;
+		this.head = 0;
+		this.Job = 0;
+		this.Sex = 0;
+	};
+	PACKET.CH.MAKE_CHAR3.prototype.build = function() {
+		var pkt_len = 2 + 24 + 1 + 2 + 2 + 2 + 2 + 1; // Total 36 bytes
+		var pkt_buf = new BinaryWriter(pkt_len);
+		
+		pkt_buf.writeShort(0xa39);
+		pkt_buf.writeString(this.name, 24);
+		pkt_buf.writeUChar(this.CharNum);
+		pkt_buf.writeShort(this.headPal);
+		pkt_buf.writeShort(this.head);
+		pkt_buf.writeShort(this.Job);
+		// "Unknown" occupies 2 bytes with a value of 0
+		pkt_buf.writeUChar(0);
+		pkt_buf.writeUChar(0);
+		pkt_buf.writeUChar(this.Sex);
+		
+		return pkt_buf;
+	};
+
 	// 0xa43
 	PACKET.ZC.ADD_MEMBER_TO_GROUP3 = function PACKET_ZC_ADD_MEMBER_TO_GROUP3(fp, end) {
 		this.AID = fp.readULong();
@@ -12469,7 +12606,7 @@ define(['Utils/BinaryWriter', './PacketVerManager', 'Utils/Struct'], function (B
 	//0xb09
 	PACKET.ZC.SPLIT_SEND_ITEMLIST_NORMAL = function PACKET_ZC_SPLIT_SEND_ITEMLIST_NORMAL(fp, end) {
 		this.invType = fp.readUChar();
-		
+
 		let item_size = (PACKETVER.value >= 20181121 ? 34 : 24);
 		this.ItemInfo = (function() {
 			var i, count = (end - fp.tell()) / item_size | 0,
@@ -12559,7 +12696,7 @@ define(['Utils/BinaryWriter', './PacketVerManager', 'Utils/Struct'], function (B
 
 	// 0xb18
 	PACKET.ZC.EXTEND_BODYITEM_SIZE = function PACKET_ZC_EXTEND_BODYITEM_SIZE(fp, end) {
-        this.type = fp.readUShort();        
+        this.type = fp.readUShort();
     };
     PACKET.ZC.EXTEND_BODYITEM_SIZE.size = 4;
 
@@ -12811,7 +12948,13 @@ define(['Utils/BinaryWriter', './PacketVerManager', 'Utils/Struct'], function (B
 		})();
 	};
 	PACKET.ZC.PC_PURCHASE_ITEMLIST2.size = -1;
-	
+
+	// 0xb6f
+	PACKET.HC.ACCEPT_MAKECHAR = function PACKET_HC_ACCEPT_MAKECHAR(fp, end) {
+		this.charinfo = PACKETVER.parseCharInfo(fp, end)[0];
+	};
+	PACKET.HC.ACCEPT_MAKECHAR.size = 0;
+
 	//0xb8d
 	PACKET.ZC.REPUTE_INFO = function PACKET_ZC_REPUTE_INFO(fp, end) {
 		this.success = fp.readUChar();

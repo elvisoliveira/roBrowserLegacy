@@ -235,6 +235,11 @@
 	ROBrowser.prototype.enableCashShop = false;
 
 	/**
+	 * @var {boolean} Enable Bank UI
+	 */
+	ROBrowser.prototype.enableBank = false;
+
+	/**
 	 * @var {mixed} set a version to avoid browser cache problem so
 	 * your users wil get the latest version running instead of a
 	 * cached one.
@@ -378,6 +383,7 @@
 	// Custom camera support
 	ROBrowser.prototype.ThirdPersonCamera = false;
 	ROBrowser.prototype.FirstPersonCamera = false;
+	ROBrowser.prototype.CameraMaxZoomOut = 0;
 
 	/**
 	 * Spam the window until there is an answer
@@ -409,6 +415,7 @@
 			BGMFileExtension: this.BGMFileExtension,
 			ThirdPersonCamera: this.ThirdPersonCamera,
 			FirstPersonCamera: this.FirstPersonCamera,
+			CameraMaxZoomOut: this.CameraMaxZoomOut,
 		}, '*');
 	}
 

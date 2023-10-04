@@ -33,11 +33,13 @@
 					ROConfig.skipIntro          = event.data.skipIntro          || false;
 					ROConfig.autoLogin          = event.data.autoLogin          || [];
 					ROConfig.enableCashShop     = event.data.enableCashShop     || false;
+					ROConfig.enableBank			= event.data.enableBank			|| false;
 					ROConfig.version            = event.data.version            || '';
 					ROConfig.BGMFileExtension   = event.data.BGMFileExtension   || ['mp3'];
 					ROConfig.plugins            = event.data.plugins            || {};
 					ROConfig.ThirdPersonCamera  = event.data.ThirdPersonCamera  || false;
 					ROConfig.FirstPersonCamera  = event.data.FirstPersonCamera  || false;
+					ROConfig.CameraMaxZoomOut   = event.data.CameraMaxZoomOut   || 0;
 
 					if (ROConfig.development) {
 						var script  = document.createElement('script');

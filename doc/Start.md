@@ -56,8 +56,9 @@ For development purposes (modifying the source/testing) skip this section and se
 - click on "Thread"
 - place `Online.js`and `ThreadEventHandler.js` files under roBrowserLegacy `root` directory
 
-### Add game assets
-- copy your `.grf` under `client/resources` directory
+### Add game assets ([additional info](https://github.com/MrAntares/roBrowserLegacy/blob/master/client/readme.md))
+- copy your `.grf` under `client/resources` directory (only unencripted, 0x200 version is supported)
+- alternatively, if you don't want to use GRFs directly, then you can extract your GRFs into the `client/data` directory (not recommended, but it works fine)
 - copy your `DATA.INI` (GRF loading order) under `client/resources` directory
 - copy your BGM `.mp3` under `client/BGM` directory
 - copy your data directory under `client/data`directory
@@ -86,13 +87,13 @@ function initialize() {
           width:          800,    // Only affects TYPE.POPUP
           height:         600,    // Only affects TYPE.POPUP
           development:    false,  // When false needs a compiled Online.js in the root (faster load). When true, the client will directly use the javascript files from src/ (slower load, for debugging/development only)
+          version:        20230927.0959, // Update this value every time you update your robrowser, to trigger a source refresh on every browser. Recommended to use a decimal timestamp (YYYYMMDD.hhmm), but can be anything
           
           servers: [{  // Game server info. You must configure this! You can have multiple servers like: servers: [{..}, {..}, {..}],
               display:     "Demo Server",  // Display name, can be anything
               desc:        "roBrowser's demo server",  // Description, can be anything
               address:     "127.0.0.1",   // Must match your game server's
               port:        6900,          // Must match your game server's
-              version:     25,            // Must match your game server's
               langtype:    12,            // Must match your game server's
               packetver:   20191223,      // Must match your game server's
               renewal:     true,          // Must match your game server's type (true/false). When using clientinfo.xml you can add the <renewal>true</renewal> custom tag.
@@ -102,9 +103,10 @@ function initialize() {
           }],
           
           skipServerList:  true,   // Skip server selection?
-          skipIntro:       false,  // Skip intor page?
+          skipIntro:       false,  // Skip intro page?
           
           enableCashShop:  false,  // Enable Cash Shop UI?
+          enableBank:      false,  // Enable Bank UI? (Requires PACKETVER 20130724 above)
           
        /* OPTIONAL/CUSTOM CONFIGS */
        /* Add/Remove the below as you wish */
@@ -116,14 +118,22 @@ function initialize() {
           /* Plugins */
           plugins:  {
                         /* Syntax */
+
+                        // Simple (no parameters):
                         // PluginName: 'Plugin_JS_Path_In_PluginsFolder_Without_Extension',
+
+                        // Complex (with configurable parameters):
+                        // PluginName: { path:'Plugin_JS_Path_In_PluginsFolder_Without_Extension', pars: { param1: <val1>, param2: <val2>, param3: <val3>... } }
+
                         /* Example: */
-                        // KeyToMove: 'KeyToMove/KeyToMove',
+                        // KeyToMove: 'KeyToMove/KeyToMove'
+                        // IntroMessage: { path:'IntroMessage/IntroMessage', pars: { newsUrl: 'https://yourserver.com/news/news.html' } }
                     },
           
           /* Custom, "for fun" camera modes */
           ThirdPersonCamera: false,  // When true you can zoom in more and rotate camera around player more freely with mouse
           FirstPersonCamera: false,  // When true you can look from the player's head, like an FPS game and rotate camera without limit
+          CameraMaxZoomOut: 5,  // How far can you zoom out the camera, default:5. Note: Extreme values can break camera and/or mouse.
       };
       var RO = new ROBrowser(ROConfig);
       RO.start();

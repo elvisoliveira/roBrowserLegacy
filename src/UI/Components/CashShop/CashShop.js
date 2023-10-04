@@ -19,10 +19,16 @@ define(function(require)
 	var Client             = require('Core/Client');
 	var jQuery             = require('Utils/jquery');
 	var Network            = require('Network/NetworkManager');
+	var PACKETVER        = require('Network/PacketVerManager');
 	var PACKET             = require('Network/PacketStructure');
 	var InputBox           = require('UI/Components/InputBox/InputBox');
 	var ChatBox      	   = require('UI/Components/ChatBox/ChatBox');
-	var Minimap      	   = require('UI/Components/MiniMap/MiniMap');
+	var MiniMap;
+	if(PACKETVER.value >= 20180124) {
+		MiniMap          = require('UI/Components/MiniMapV2/MiniMapV2');
+	} else {
+		MiniMap          = require('UI/Components/MiniMap/MiniMap');
+	}
 	var Renderer           = require('Renderer/Renderer');
 	var Preferences        = require('Core/Preferences');
 	var UIManager          = require('UI/UIManager');
@@ -167,11 +173,11 @@ define(function(require)
 			CashShop.onResetCartListCashShop();
 		}
 		
-		Minimap.ui.append('<button class="cashshopIcon"></button>');
-		Minimap.ui.on('click', '.cashshopIcon', onClickIcon);
+		MiniMap.ui.append('<button class="cashshopIcon"></button>');
+		MiniMap.ui.on('click', '.cashshopIcon', onClickIcon);
 
 		Client.loadFile(DB.INTERFACE_PATH + 'basic_interface/nc_cashshop.bmp', function(data){
-			Minimap.ui.find('.cashshopIcon').css('backgroundImage', 'url('+ data +')');
+			MiniMap.ui.find('.cashshopIcon').css('backgroundImage', 'url('+ data +')');
 		});
 	};
 	

@@ -41,8 +41,23 @@ define(function( require )
 	var Escape           = require('UI/Components/Escape/Escape');
 	var ChatBox          = require('UI/Components/ChatBox/ChatBox');
 	var ChatBoxSettings  = require('UI/Components/ChatBoxSettings/ChatBoxSettings');
-	var MiniMap          = require('UI/Components/MiniMap/MiniMap');
-	var BasicInfo        = require('UI/Components/BasicInfo/BasicInfo');
+
+	var MiniMap;
+	if(PACKETVER.value >= 20180124) {
+		MiniMap          = require('UI/Components/MiniMapV2/MiniMapV2');
+	} else {
+		MiniMap          = require('UI/Components/MiniMap/MiniMap');
+	}
+
+	var BasicInfo;
+	if(PACKETVER.value >= 20180124) {
+		BasicInfo = require('UI/Components/BasicInfoV4/BasicInfoV4');
+	} else if(PACKETVER.value >= 20160101) {
+		BasicInfo = require('UI/Components/BasicInfoV3/BasicInfoV3');
+	}   else {
+		BasicInfo = require('UI/Components/BasicInfo/BasicInfo');
+	}
+
 	var WinStats         = require('UI/Components/WinStats/WinStats');
 	var Inventory        = require('UI/Components/Inventory/Inventory');
 	var CartItems        = require('UI/Components/CartItems/CartItems');
@@ -62,6 +77,7 @@ define(function( require )
 	var SkillListMER     = require('UI/Components/SkillListMER/SkillListMER');
 	var MobileUI         = require('UI/Components/MobileUI/MobileUI');
 	var CashShop         = require('UI/Components/CashShop/CashShop');
+	var Bank             = require('UI/Components/Bank/Bank');
 	var PluginManager    = require('Plugins/PluginManager');
 
 	/**
@@ -192,9 +208,13 @@ define(function( require )
 		require('./MapEngine/Store').call();
 		require('./MapEngine/Trade').call();
 		require('./MapEngine/Friends').init();
-		
+
 		if(Configs.get('enableCashShop')){
 			require('./MapEngine/CashShop').call();
+		}
+
+		if(Configs.get('enableBank')) {
+			require('./MapEngine/Bank').init();
 		}
 
 		// Prepare UI
@@ -219,11 +239,14 @@ define(function( require )
 		Guild.prepare();
 		WorldMap.prepare();
 		SkillListMER.prepare();
-		
+
 		if(Configs.get('enableCashShop')){
 			CashShop.prepare();
 		}
-		
+
+		if(Configs.get('enableBank')) {
+			Bank.prepare();
+		}
 
 		// Bind UI
 		WinStats.onRequestUpdate        = onRequestStatUpdate;
@@ -284,7 +307,7 @@ define(function( require )
 		Session.guildRight    =     0;
 
 		Session.homunId       =     0;
-		
+
 		Session.Entity.clevel = Session.Character.level;
 
 		BasicInfo.update('blvl', Session.Character.level );
@@ -334,6 +357,7 @@ define(function( require )
 				GID: Session.Character.GID
 			});
 			EntityManager.add( Session.Entity );
+			Session.Entity.aura.free(); // free aura so it loads in new map
 
 			// Initialize camera
 			Camera.setTarget( Session.Entity );
@@ -363,11 +387,11 @@ define(function( require )
 			WorldMap.append();
 			SkillListMER.append();
 			MobileUI.append();
-			
+
 			if(Configs.get('enableCashShop')){
 				CashShop.append();
 			}
-			
+
 			// Reload plugins
 			PluginManager.init();
 
@@ -495,6 +519,7 @@ define(function( require )
 			ChatBox.addText( DB.getMessage(502), ChatBox.TYPE.ERROR, ChatBox.FILTER.PUBLIC_LOG );
 		}
 		else {
+			BasicInfo.remove();
 			StatusIcons.clean();
 			ChatBox.clean();
 			ShortCut.clean();
@@ -515,6 +540,7 @@ define(function( require )
 		switch (pkt.result) {
 			// Disconnect
 			case 0:
+				BasicInfo.remove();
 				StatusIcons.clean();
 				ChatBox.clean();
 				ShortCut.clean();
